@@ -22,6 +22,8 @@ class BasicLoader:
         discrete: list[str],
         labels: dict[str, str] | None = None,
         title_map: dict[str, str] | None = None,
+        include: dict[str, Iterable] | None = None,
+        exclude: dict[str, Iterable] | None = None,
         csv_separator: str=',',
     ):
         self.file = Path(file)
@@ -29,6 +31,9 @@ class BasicLoader:
         self.targets = list(target)
         self.continuous = list(continuous)
         self.discrete = list(discrete)
+
+        self.include = include or {}
+        self.exclude = exclude or {}
 
         self.labels = {}
         self.clean = {}
@@ -118,12 +123,35 @@ class BasicLoader:
                 .copy()
             )
 
+    def build_datasets(self):
+
+        # Start from the complete dataset
+        df = self.state["raw"].copy()
+
+        # Apply row filters
+        for column, values in self.include.items():
+            df = df[df[column].isin(values)]
+
+        for column, values in self.exclude.items():
+            df = df[~df[column].isin(values)]
+
+        features = self.continuous + self.discrete
+
+        for target in self.targets:
+            cols = features + [target]
+            self.datasets[target] = (
+                df.loc[:, cols]
+                  .copy()
+                  .reset_index(drop=True)
+            )
+
     ###########################################################################
     # Access
     ###########################################################################
     def set_label(self, target: str, label: str):
         self.labels[target] = label
-
+        self.clean[target] = re.sub(r'[^\w\-]', '', str(label).strip().replace(' ', '_'))
+        
     def __getitem__(self, target: str):
         return self.datasets[target]
 
