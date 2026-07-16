@@ -2,7 +2,7 @@ from loader import BasicLoader
 from trainer import BinaryTuner
 
 study = BasicLoader('Dataset_Pregnancy_Outcomes.csv', csv_separator=';',
-    target=['Class_GDM (1=no, 2=yes)'],
+    target=['Class_GDM'],
     continuous=['Age (years)', 'BMI 1T (Kg/m2)', 'BMI 2T (Kg/m2)', 'Newborn weight (g)','Newborn height (cm)'],
     discrete=['Newborn sex (F=1, M=2)'])
 
@@ -13,8 +13,8 @@ study = BasicLoader('Dataset_Pregnancy_Outcomes.csv', csv_separator=';',
 # study.plot_all_distributions()
 # study.plot_all_boxplots()
 #
-trial_df = study.get_dataset('Class_GDM (1=no, 2=yes)', remap_smaller_is_zero=True)
+trial_df = study.get_dataset('Class_GDM', remap_smaller_is_zero=True)
 
-trial = BinaryTuner(trial_df, 'Class_GDM (1=no, 2=yes)', n_seeds=10)
+trial = BinaryTuner(trial_df, 'Class_GDM', n_seeds=10)
 
 trial.fit()

@@ -151,7 +151,7 @@ class BasicLoader:
     def set_label(self, target: str, label: str):
         self.labels[target] = label
         self.clean[target] = re.sub(r'[^\w\-]', '', str(label).strip().replace(' ', '_'))
-        
+
     def __getitem__(self, target: str):
         return self.datasets[target]
 
@@ -169,19 +169,29 @@ class BasicLoader:
         remap_smaller_is_zero: bool = False,
     ) -> pd.DataFrame:
 
-        dfi = self.datasets[target].copy()
 
-        if not remap_smaller_is_zero:
-            return dfi
+        if target in self.datasets:
+            key_target = target
+        elif (key := next((k for k, v in self.labels.items() if v == target), None)) is not None:
+            key_target = key
+        else:
+            raise f'{target} column not found in the study'
 
-        groups = sorted(dfi[target].dropna().unique())
+        dfi = self.datasets[key_target].copy()
 
-        mapping = {
-            groups[0]: 0,
-            groups[1]: 1,
-        }
+        if remap_smaller_is_zero:
+            groups = sorted(dfi[target].dropna().unique())
 
-        dfi[target] = dfi[target].map(mapping)
+            mapping = {
+                groups[0]: 0,
+                groups[1]: 1,
+            }
+
+            dfi[target] = dfi[target].map(mapping)
+
+        rename_map = { col: self.labels[col] for col in dfi.columns if col in self.labels and self.labels[col] != col }
+        if rename_map:
+            dfi = dfi.rename(columns=rename_map)
 
         return dfi
 

@@ -59,7 +59,7 @@ warnings.simplefilter(action='ignore', category=(FutureWarning, FitFailedWarning
 #from sklearn.model_selection import HalvingRandomSearchCV
 
 class BinaryTuner:
-    def __init__(self, dataFrame, label_class, seeds=None, dnn=False, test_size=0.2, test_prio=0.9, tuneScoring=None, debug=False, n_seeds=3):
+    def __init__(self, dataFrame, label_class, seeds=None, dnn=False, test_size=0.2, test_prio=0.9, tuneScoring='accuracy', debug=False, n_seeds=3):
         self.ledger = pd.DataFrame(columns=["node", "ts", "Dataset", "Model", "Params", "Seed", "Ratio", "Accuracy", "Specificity", "Recall", "F1", "ROC_AUC"])
         self.name = label_class
         self.safe_name = re.sub(r'[^\w\-]', '', str(label_class).strip().replace(' ', '_'))
@@ -316,12 +316,18 @@ class BinaryTuner:
         roc_auc = roc_auc_score(y_test, y_pred)
         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 
+        den = tp + fn
+        sensitivity = tp / den if den != 0 else np.nan
 
-        sensitivity = tp / (tp + fn)
-        specificity = tn / (tn + fp)
+        den = tn + fp
+        specificity = tn / den if den != 0 else np.nan
 
-        npv = tn / (tn + fn)
-        ppv = tp / (tp + fp)
+        den = tn + fn
+        npv = tn / den if den != 0 else np.nan
+
+        den = tp + fp
+        ppv = tp / den if den != 0 else np.nan
+
 
         self.trained += 1
         self.bar.update()
@@ -436,11 +442,17 @@ class BinaryTuner:
         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 
 
-        sensitivity = tp / (tp + fn)
-        specificity = tn / (tn + fp)
+        den = tp + fn
+        sensitivity = tp / den if den != 0 else np.nan
 
-        npv = tn / (tn + fn)
-        ppv = tp / (tp + fp)
+        den = tn + fp
+        specificity = tn / den if den != 0 else np.nan
+
+        den = tn + fn
+        npv = tn / den if den != 0 else np.nan
+
+        den = tp + fp
+        ppv = tp / den if den != 0 else np.nan
 
         self.trained += 1
         self.bar.update()
@@ -753,7 +765,7 @@ class BinaryTuner:
 
     def wrap_and_save(self):
         self.logger.info("{:=^60}".format(' Saving Summary and Wrap the output in a ZipFile '))
-        for metric in ["ROC_AUC", "NPV", "PPV", "Brier", "Sensitivity", "Specificity"]:
+        for metric in ["ROC_AUC", "Accuracy", "NPV", "PPV", "Brier", "Sensitivity", "Specificity"]:
             with pd.ExcelWriter('{}/Summary-{}.xlsx'.format(self.safe_name, metric) , engine='xlsxwriter') as xls:
                 self.get_best_models(metric).to_excel(xls, sheet_name='Results')
 
