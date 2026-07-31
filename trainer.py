@@ -687,9 +687,9 @@ class BinaryTuner:
         X_explain = scaler.transform(X_raw_explain)
         X_model = scaler.transform(Xbase)
 
-        if not self.is_balanced(y):
-            ros = RandomOverSampler(random_state=seed)
-            X_train, y_train = ros.fit_resample(X_train, y_train)
+#        if not self.is_balanced(y):
+#            ros = RandomOverSampler(random_state=seed)
+#            X_train, y_train = ros.fit_resample(X_train, y_train)
 
 #        explainer_model = shap.Explainer(model)
 
@@ -699,16 +699,16 @@ class BinaryTuner:
 #        shap_values = explainer.shap_values(X_test)[1]
         self.logger.info("Columns: {}".format(Xbase.columns))
 #        label_columns = ['sex', 'family hist', 'age diag', 'BMI', 'base glu', 'glu 120','HbA1c']
-        label_columns = ['sexo', 'hist fam', 'edad diag', 'IMC', 'glu ayu', 'glu 120','A1c']
+#        label_columns = ['sexo', 'hist fam', 'edad diag', 'IMC', 'glu ayu', 'glu 120','A1c']
 
         explainer = shap.Explainer(model.predict, X_train, seed=seed)
         shap_values = explainer(X_model)
 
         exp = shap.Explanation(shap_values,
                           data=X_model,
-                          feature_names=label_columns)
+                          feature_names=Xbase.columns)
 
-        shap.plots.decision(exp.base_values[0], exp.values, features=label_columns, show=False)
+        shap.plots.decision(exp.base_values[0], exp.values, features=Xbase.columns, show=False)
         plt.title(r"Predicciones mejor modelo: {0}".format(modelname))
         plt.xlabel("Predicción del modelo: 0 Negativo, 1 Positivo")
         plt.savefig("{}/shap_{}_{}_{}.png".format(self.safe_name, modelname, dataset, seed),dpi=150, bbox_inches='tight')
