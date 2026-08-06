@@ -96,21 +96,21 @@ NMB_T1 = BasicLoader('Dataset_Pregnancy_Outcomes_binary.csv',
 NMB_T1.set_label('Class_Macrosomia', 'NBM T1')
 
 
-studies = [ ('PTB noGDM T3', PTB_noGDM),
-            ('PTB GDM T3', PTB_GDM),
-            ('NBM GDM T2', NBM_GDM),
-            ('PTB T3', PTB_T3),
-            ('NBM T3', NMB_T3),
-            ('PTB T2', PTB_T2),
-            ('NBM T2', NMB_T2),
-            ('PTB T1', PTB_T1),
-            ('NBM T1', NMB_T1) ]
-
-for target, study in studies:
-    study_df = study.get_dataset(target)
-    trial = BinaryTuner(study_df, target, n_seeds=25, tuneScoring='roc_auc')
-    trial.fit()
-    trial.wrap_and_save()
+# studies = [ ('PTB noGDM T3', PTB_noGDM),
+#             ('PTB GDM T3', PTB_GDM),
+#             ('NBM GDM T2', NBM_GDM),
+#             ('PTB T3', PTB_T3),
+#             ('NBM T3', NMB_T3),
+#             ('PTB T2', PTB_T2),
+#             ('NBM T2', NMB_T2),
+#             ('PTB T1', PTB_T1),
+#             ('NBM T1', NMB_T1) ]
+#
+# for target, study in studies:
+#     study_df = study.get_dataset(target)
+#     trial = BinaryTuner(study_df, target, n_seeds=25, tuneScoring='roc_auc')
+#     trial.fit()
+#     trial.wrap_and_save()
 
 
 explain = [ ('PTB T3', PTB_T3, 'GaussianNB', 'nomissing-original', 455347),         # Avg ROC_AUC: 0.668	± 0.162
