@@ -644,7 +644,7 @@ class BinaryTuner:
         if pieces[-1] in ("mice", "knn"):
             imputer = pieces[2]
 
-            scaler_path = f"{self.safe_name}/{dataset_name}-{sample}/{imputer}_StandardScaler"
+            scaler_path = f"{self.safe_name}/{dataset_name}-original/{imputer}_StandardScaler"
             model_path = f"{self.safe_name}/{dataset_name}-{sample}/{imputer}_{modelname}"
 
             if dataset_name == "fulldataset":
@@ -662,7 +662,7 @@ class BinaryTuner:
         else:
             imputer = None
 
-            scaler_path = f"{self.safe_name}/{dataset_name}-{sample}/StandardScaler"
+            scaler_path = f"{self.safe_name}/{dataset_name}-original/StandardScaler"
             model_path = f"{self.safe_name}/{dataset_name}-{sample}/{modelname}"
 
             X = self.noMissingDataset.drop(self.name, axis=1)
