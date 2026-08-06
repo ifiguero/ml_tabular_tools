@@ -111,3 +111,17 @@ for target, study in studies:
     trial = BinaryTuner(study_df, target, n_seeds=25, tuneScoring='roc_auc')
     trial.fit()
     trial.wrap_and_save()
+
+
+explain = [ ('PTB T3', PTB_T3, 'GaussianNB', 'nomissing-original', 455347),         # Avg ROC_AUC: 0.668	± 0.162
+            ('NBM T3', NMB_T3, 'GaussianNB', 'nomissing-original', 858565 ),        # Avg ROC_AUC: 0.810	± 0.176
+            ('PTB T2', PTB_T2, 'GaussianNB', 'nomissing-oversampled', 669895),      # Avg ROC_AUC: 0.742	± 0.121
+            ('NBM T2', NMB_T2, 'GaussianNB', 'nomissing-original', 609568),         # Avg ROC_AUC: 0.893	± 0.067
+            ('PTB T1', PTB_T1, 'XGBClassifier', 'nomissing-oversampled', 779519),   # Avg ROC_AUC: 0.707	± 0.176
+            ('NBM T1', NMB_T1, 'PLSRegression', 'nomissing-oversampled', 569961) ]  # Avg ROC_AUC: 0.698	± 0.168
+
+for target, study, best_model, best_sample, avg_seed in explain:
+    study_df = study.get_dataset(target)
+    trial = BinaryTuner(study_df, target, n_seeds=25, tuneScoring='roc_auc')
+    trial.explain_model(best_model, best_sample, avg_seed)
+    trial.wrap_and_save()
