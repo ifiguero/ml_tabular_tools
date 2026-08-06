@@ -700,7 +700,7 @@ class BinaryTuner:
         self.logger.info("Columns: {}".format(Xbase.columns))
 #        label_columns = ['sex', 'family hist', 'age diag', 'BMI', 'base glu', 'glu 120','HbA1c']
 #        label_columns = ['sexo', 'hist fam', 'edad diag', 'IMC', 'glu ayu', 'glu 120','A1c']
-         label_columns = Xbase.columns
+        label_columns = Xbase.columns
 
         explainer = shap.Explainer(model.predict, X_train, seed=seed)
         shap_values = explainer(X_model)
