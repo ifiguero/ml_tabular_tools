@@ -738,7 +738,7 @@ class BinaryTuner:
 
             for i in range(n_examples):
                 shap.plots.waterfall(group_exp[i], show=False)
-                plt.title(f"{modelname} - {group_name.upper()} #{i + 1}")
+                plt.title(f"{modelname} - {group_name.upper()}_{i + 1}")
                 plt.savefig(
                     f"{self.safe_name}/waterfall_{group_name}_{i}_{modelname}_{dataset_name}_{seed}.png",
                     dpi=150,
