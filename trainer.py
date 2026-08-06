@@ -625,6 +625,130 @@ class BinaryTuner:
         return self.ledger.groupby(["Dataset", "Model"])[metric].agg(['mean', 'std'])
 
     def explain_model(self, modelname=None, dataset=None, seed=None):
+        self.logger.info(
+            "{:=^60}".format(
+                f" Begin SHAP Explainer: {modelname} {dataset} {seed} "
+            )
+        )
+
+        Xbase = self.noMissingDataset.drop(self.name, axis=1)
+        ybase = self.noMissingDataset[self.name].to_numpy()
+
+        pieces = dataset.split("-")
+        dataset_name = pieces[0]
+        sample = pieces[1]
+
+        self.logger.info(f"Dataset: {dataset_name}")
+        self.logger.info(f"Sample: {sample}")
+
+        if pieces[-1] in ("mice", "knn"):
+            imputer = pieces[2]
+
+            scaler_path = f"{self.safe_name}/{dataset_name}-{sample}/{imputer}_StandardScaler"
+            model_path = f"{self.safe_name}/{dataset_name}-{sample}/{imputer}_{modelname}"
+
+            if dataset_name == "fulldataset":
+                X_na = self.missingDatasets[0][0].drop(self.name, axis=1)
+                y = self.missingDatasets[0][0][self.name]
+            else:
+                X_na = self.missingDatasets[1][0].drop(self.name, axis=1)
+                y = self.missingDatasets[1][0][self.name]
+
+            if imputer == "knn":
+                X = KNNImputer(n_neighbors=5).fit_transform(X_na)
+            elif imputer == "mice":
+                X = IterativeImputer(max_iter=10, random_state=seed).fit_transform(X_na)
+
+        else:
+            imputer = None
+
+            scaler_path = f"{self.safe_name}/{dataset_name}-{sample}/StandardScaler"
+            model_path = f"{self.safe_name}/{dataset_name}-{sample}/{modelname}"
+
+            X = self.noMissingDataset.drop(self.name, axis=1)
+            y = self.noMissingDataset[self.name]
+
+
+        X_train, _, _, _ = train_test_split(X, y, test_size=self.ratio, random_state=seed, stratify=y)
+
+        scaler = joblib.load(f"{scaler_path}_{seed}")
+        model = joblib.load(f"{model_path}_{seed}")
+
+        X_train = scaler.transform(X_train)
+        X_model = scaler.transform(Xbase)
+
+        feature_names = list(Xbase.columns)
+
+        explainer = shap.Explainer(model.predict, X_train, seed=seed)
+        shap_values = explainer(X_model)
+
+        exp = shap.Explanation(
+            values=shap_values.values,
+            base_values=shap_values.base_values,
+            data=X_model,
+            feature_names=feature_names,
+        )
+
+        y_pred = model.predict(X_model)
+        if type_of_target(y_pred) == "continuous":
+            y_pred = (y_pred > 0.5).astype(int)
+
+        y_pred = np.asarray(y_pred).astype(int)
+
+        groups = {
+            "all": np.ones(len(ybase), dtype=bool),
+            "tpos": (y_pred == 1) & (ybase == 1),
+            "fpos": (y_pred == 1) & (ybase == 0),
+            "tneg": (y_pred == 0) & (ybase == 0),
+            "fneg": (y_pred == 0) & (ybase == 1),
+        }
+
+        for group_name, mask in groups.items():
+
+            idx = np.flatnonzero(mask)
+
+            if len(idx) == 0:
+                self.logger.info(f"Skipping empty SHAP group: {group_name}")
+                continue
+
+            group_exp = shap.Explanation(
+                values=exp.values[idx],
+                base_values=exp.base_values[idx],
+                data=exp.data[idx],
+                feature_names=feature_names,
+            )
+
+            shap.plots.decision(
+                group_exp.base_values[0],
+                group_exp.values,
+                features=feature_names,
+                show=False,
+            )
+
+            plt.title(f"{modelname} - {group_name.upper()}")
+            plt.xlabel("Model prediction: 0 Negativo, 1 Positivo ")
+            plt.savefig(
+                f"{self.safe_name}/shap_{group_name}_{modelname}_{dataset_name}_{seed}.png",
+                dpi=150,
+                bbox_inches="tight",
+            )
+            plt.close()
+
+            n_examples = min(5, len(group_exp))
+
+            for i in range(n_examples):
+                shap.plots.waterfall(group_exp[i], show=False)
+                plt.title(f"{modelname} - {group_name.upper()} #{i + 1}")
+                plt.savefig(
+                    f"{self.safe_name}/waterfall_{group_name}_{i}_{modelname}_{dataset_name}_{seed}.png",
+                    dpi=150,
+                    bbox_inches="tight",
+                )
+                plt.close()
+
+
+
+    def explain_model_old(self, modelname=None, dataset=None, seed=None):
         self.logger.info("{:=^60}".format(' Begin SHAP Explainer: {} {} {} '.format(modelname, dataset, seed)))
 
         Xbase = self.noMissingDataset.drop(self.name, axis=1)
@@ -687,19 +811,8 @@ class BinaryTuner:
         X_explain = scaler.transform(X_raw_explain)
         X_model = scaler.transform(Xbase)
 
-#        if not self.is_balanced(y):
-#            ros = RandomOverSampler(random_state=seed)
-#            X_train, y_train = ros.fit_resample(X_train, y_train)
-
-#        explainer_model = shap.Explainer(model)
-
-#        expected_value = explainer_model.expected_value
-#        if isinstance(expected_value, list):
-#            expected_value = expected_value[1]
-#        shap_values = explainer.shap_values(X_test)[1]
         self.logger.info("Columns: {}".format(Xbase.columns))
-#        label_columns = ['sex', 'family hist', 'age diag', 'BMI', 'base glu', 'glu 120','HbA1c']
-#        label_columns = ['sexo', 'hist fam', 'edad diag', 'IMC', 'glu ayu', 'glu 120','A1c']
+
         label_columns = Xbase.columns
 
         explainer = shap.Explainer(model.predict, X_train, seed=seed)
